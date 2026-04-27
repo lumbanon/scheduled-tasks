@@ -39,37 +39,49 @@
 import requests
 from twilio.rest import Client
 import os
-account_sid = 'ACCOUNT_SID'
-auth_token = 'AUTH_TOKEN'
-api_key = "API_KEY"
-parameters={
 
-    "lat" : YOUR_LATITUDE,
-    "lon" : YOUR_LONGITUDE,
-    "appid" : api_key,
-    "cnt":4
+# API & Twilio credentials
+api_key = os.environ.get("API_KEY")
+account_sid = os.environ.get("ACCOUNT_SID")
+auth_token = os.environ.get("AUTH_TOKEN")
+
+# New environment variables
+lat = float(os.environ.get("LATITUDE"))
+lon = float(os.environ.get("LONGITUDE"))
+virtual_number = os.environ.get("VIRTUAL_NUMBER")
+phone_number = os.environ.get("PHONE_NUMBER")
+
+parameters = {
+    "lat": lat,
+    "lon": lon,
+    "appid": api_key,
+    "cnt": 4
 }
-
 
 data = requests.get(
     "https://api.openweathermap.org/data/2.5/forecast",
     params=parameters,
-
 )
+
 data.raise_for_status()
 weather_data = data.json()
-weather_list=[]
-is_rain=False
-for _ in range(len(weather_data["list"])):
-    weather_list.append(weather_data["list"][_]["weather"][0]["id"])
+
+weather_list = []
+is_rain = False
+
+for i in range(len(weather_data["list"])):
+    weather_list.append(weather_data["list"][i]["weather"][0]["id"])
+
 for weather in weather_list:
-    if weather>700:
-        is_rain=True
+    # Weather condition codes: rain is 200–599
+    if weather < 700:
+        is_rain = True
+
 if is_rain:
     client = Client(account_sid, auth_token)
     message = client.messages.create(
-        body="It is going to rain bring an umbrella",
-        from_='VIRTUAL_NUMBER',
-        to='PHONE_NUMBER'
+        body="It is going to rain, bring an umbrella ☔",
+        from_=virtual_number,
+        to=phone_number
     )
     print(message.status)
