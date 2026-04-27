@@ -6,33 +6,69 @@
 # See the solution video in the 100 Days of Python Course for explainations.
 
 
-from datetime import datetime
-import pandas
-import random
-import smtplib
-import os
+# from datetime import datetime
+# import pandas
+# import random
+# import smtplib
+# import os
 
-# import os and use it to get the Github repository secrets
-MY_EMAIL = os.environ.get("MY_EMAIL")
-MY_PASSWORD = os.environ.get("MY_PASSWORD")
+# # import os and use it to get the Github repository secrets
+# MY_EMAIL = os.environ.get("MY_EMAIL")
+# MY_PASSWORD = os.environ.get("MY_PASSWORD")
 
-today = datetime.now()
-today_tuple = (today.month, today.day)
+# today = datetime.now()
+# today_tuple = (today.month, today.day)
 
-data = pandas.read_csv("birthdays.csv")
-birthdays_dict = {(data_row["month"], data_row["day"])                  : data_row for (index, data_row) in data.iterrows()}
-if today_tuple in birthdays_dict:
-    birthday_person = birthdays_dict[today_tuple]
-    file_path = f"letter_templates/letter_{random.randint(1, 3)}.txt"
-    with open(file_path) as letter_file:
-        contents = letter_file.read()
-        contents = contents.replace("[NAME]", birthday_person["name"])
+# data = pandas.read_csv("birthdays.csv")
+# birthdays_dict = {(data_row["month"], data_row["day"])                  : data_row for (index, data_row) in data.iterrows()}
+# if today_tuple in birthdays_dict:
+#     birthday_person = birthdays_dict[today_tuple]
+#     file_path = f"letter_templates/letter_{random.randint(1, 3)}.txt"
+#     with open(file_path) as letter_file:
+#         contents = letter_file.read()
+#         contents = contents.replace("[NAME]", birthday_person["name"])
 
-    with smtplib.SMTP("YOUR EMAIL PROVIDER SMTP SERVER ADDRESS") as connection:
-        connection.starttls()
-        connection.login(MY_EMAIL, MY_PASSWORD)
-        connection.sendmail(
-            from_addr=MY_EMAIL,
-            to_addrs=birthday_person["email"],
-            msg=f"Subject:Happy Birthday!\n\n{contents}"
-        )
+#     with smtplib.SMTP("YOUR EMAIL PROVIDER SMTP SERVER ADDRESS") as connection:
+#         connection.starttls()
+#         connection.login(MY_EMAIL, MY_PASSWORD)
+#         connection.sendmail(
+#             from_addr=MY_EMAIL,
+#             to_addrs=birthday_person["email"],
+#             msg=f"Subject:Happy Birthday!\n\n{contents}"
+#         )
+import requests
+from twilio.rest import Client
+account_sid = 'ACCOUNT_SID'
+auth_token = 'AUTH_TOKEN'
+api_key = "API_KEY"
+parameters={
+
+    "lat" : YOUR_LATITUDE,
+    "lon" : YOUR_LONGITUDE,
+    "appid" : api_key,
+    "cnt":4
+}
+
+
+data = requests.get(
+    "https://api.openweathermap.org/data/2.5/forecast",
+    params=parameters,
+
+)
+data.raise_for_status()
+weather_data = data.json()
+weather_list=[]
+is_rain=False
+for _ in range(len(weather_data["list"])):
+    weather_list.append(weather_data["list"][_]["weather"][0]["id"])
+for weather in weather_list:
+    if weather>700:
+        is_rain=True
+if is_rain:
+    client = Client(account_sid, auth_token)
+    message = client.messages.create(
+        body="It is going to rain bring an umbrella",
+        from_='VIRTUAL_NUMBER',
+        to='PHONE_NUMBER'
+    )
+    print(message.status)
